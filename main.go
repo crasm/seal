@@ -84,7 +84,11 @@ func main() {
 				log.Fatal(err)
 			}
 		}
-		err = shield.Wrap(in, out)
+		if out == os.Stdout {
+			err = shield.WrapBuffered(in, out)
+		} else {
+			err = shield.Wrap(in, out)
+		}
 	case opt.Extract:
 		if opt.InferName {
 			out, err = safeFileCreate(strings.TrimSuffix(in.Name(), FileExtension))
