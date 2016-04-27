@@ -18,66 +18,27 @@ import (
 const DefaultPerm = 0644
 const FileExtension = `.shd`
 
+const Stdio = `-`
+
 var opt struct {
 	Create  bool `short:"C" long:"create" description:"Create a shield file."`
 	Extract bool `short:"X" long:"extract" description:"Extract a contained file from a shield file."`
 	Info    bool `short:"I" long:"info" description:"Show info on a shield file."`
 
-	InferName bool `short:"i" long:"infer-name" description:"Infer output filename."`
-	Force     bool `short:"f" long:"force" description:"Overwrite files."`
+	Output    string `short:"o" long:"output" description:"Write output to a file."`
+	inferName bool
+
+	Force bool `short:"f" long:"force" description:"Overwrite files."`
 	//Timid      bool `short:"t" long:"timid" description:"Delete extracted file if its claim is found to be invalid."`
 	//Lax   bool `short:"l" long:"lax" description:"Allow partial and unverifieid dextraction"`
 	//Quiet bool `short:"q" long:"quiet" description:"Silence all non-data output to stdout or stderr."`
 }
 
-func main() {
-	args, err := flags.Parse(&opt)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if !xor(opt.Create, opt.Extract, opt.Info) {
-		log.Fatal("more than one command (or no commands) specified")
-	}
-
-	in := os.Stdin
-	out := os.Stdout
-
-	if opt.InferName {
-		if len(args) != 1 {
-			log.Fatal("can only work on a single shield file")
-		}
-		in, err = os.Open(args[0])
-		defer in.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-	} else {
-		if len(args) > 2 {
-			log.Fatal("more than two non-flag args remaining")
-		}
-
-		if len(args) == 2 && args[1] != "-" {
-			out, err = safeFileCreate(args[1])
-			defer out.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-
-		if len(args) >= 1 && args[0] != "-" {
-			in, err = os.Open(args[0])
-			defer in.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
-
+func dispatch(in, out *os.File) error {
+	var err error
 	switch {
 	case opt.Create:
-		if opt.InferName {
+		if opt.inferName {
 			out, err = safeFileCreate(fmt.Sprint(in.Name(), FileExtension))
 			defer out.Close()
 			if err != nil {
@@ -90,7 +51,7 @@ func main() {
 			err = shield.Wrap(in, out)
 		}
 	case opt.Extract:
-		if opt.InferName {
+		if opt.inferName {
 			out, err = safeFileCreate(strings.TrimSuffix(in.Name(), FileExtension))
 			defer out.Close()
 			if err != nil {
@@ -104,6 +65,49 @@ func main() {
 		panic("info command not supported (yet)")
 	}
 
+	return nil
+}
+
+func main() {
+	args, err := flags.Parse(&opt)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !xor(opt.Create, opt.Extract, opt.Info) {
+		log.Fatal("more than one command (or no commands) specified")
+	}
+
+	if len(args) > 1 {
+		log.Fatal("can work on at most a single shield file")
+	}
+
+	in := os.Stdin
+	out := os.Stdout
+
+	// Set input file, if not stdin.
+	if len(args) == 1 && args[0] != Stdio {
+		in, err = os.Open(args[0])
+		defer in.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if opt.Output == "" {
+		if in != os.Stdin {
+			opt.inferName = true // create the file in dispatch
+			out = nil
+		}
+	} else if opt.Output != Stdio { // we're given an output file explicitly
+		out, err = safeFileCreate(opt.Output)
+		defer out.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	err = dispatch(in, out)
 	if err != nil {
 		log.Fatal(err)
 	}
