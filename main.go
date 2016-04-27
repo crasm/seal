@@ -43,7 +43,17 @@ func main() {
 	in := os.Stdin
 	out := os.Stdout
 
-	if !opt.InferName { // Want to specify input file and output file, or use stdio.
+	if opt.InferName {
+		if len(args) != 1 {
+			log.Fatal("can only work on a single shield file")
+		}
+		in, err = os.Open(args[0])
+		defer in.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	} else {
 		if len(args) > 2 {
 			log.Fatal("more than two non-flag args remaining")
 		}
@@ -63,21 +73,13 @@ func main() {
 				log.Fatal(err)
 			}
 		}
-	} else {
-		if len(args) != 1 {
-			log.Fatal("can only work on a single shield file")
-		}
-		in, err = os.Open(args[0])
-		defer in.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	switch {
 	case opt.Create:
 		if opt.InferName {
 			out, err = safeFileCreate(fmt.Sprint(in.Name(), FileExtension))
+			defer out.Close()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -86,6 +88,7 @@ func main() {
 	case opt.Extract:
 		if opt.InferName {
 			out, err = safeFileCreate(strings.TrimSuffix(in.Name(), FileExtension))
+			defer out.Close()
 			if err != nil {
 				log.Fatal(err)
 			}
