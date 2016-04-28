@@ -50,6 +50,13 @@ func dispatch(in, out string) error {
 		}
 	}
 
+	if out != Stdio && out != "" {
+		outFile, err = safeFileCreate(out)
+		if err != nil {
+			return err
+		}
+	}
+
 	inferName := out == "" && in != "" && in != Stdio
 
 	switch {
