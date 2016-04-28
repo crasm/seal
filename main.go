@@ -34,38 +34,58 @@ var opt struct {
 	//Quiet bool `short:"q" long:"quiet" description:"Silence all non-data output to stdout or stderr."`
 }
 
-func dispatch(in, out *os.File) error {
+// Figures out input and output files and calls the appropiate shield library
+// functions on them.
+func dispatch(in, out string) error {
 	var err error
+
+	inFile := os.Stdin
+	outFile := os.Stdout
+
+	if in != Stdio && in != "" {
+		inFile, err = os.Open(in)
+		defer inFile.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	inferName := out == "" && in != "" && in != Stdio
+
 	switch {
 	case opt.Create:
-		if opt.inferName {
-			out, err = safeFileCreate(fmt.Sprint(in.Name(), FileExtension))
-			defer out.Close()
+		if inferName {
+			inferred := fmt.Sprint(in, FileExtension)
+			outFile, err = safeFileCreate(inferred)
+			defer outFile.Close()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
-		if out == os.Stdout {
-			err = shield.WrapBuffered(in, out)
+
+		if outFile == os.Stdout {
+			err = shield.WrapBuffered(inFile, outFile)
 		} else {
-			err = shield.Wrap(in, out)
+			err = shield.Wrap(inFile, outFile)
 		}
+
 	case opt.Extract:
-		if opt.inferName {
-			out, err = safeFileCreate(strings.TrimSuffix(in.Name(), FileExtension))
-			defer out.Close()
+		if inferName {
+			inferred := strings.TrimSuffix(in, FileExtension)
+			outFile, err = safeFileCreate(inferred)
+			defer outFile.Close()
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		err = shield.Unwrap(in, out)
+		err = shield.Unwrap(inFile, outFile)
 	case opt.Info:
 		fallthrough
 	default:
 		panic("info command not supported (yet)")
 	}
 
-	return nil
+	return err
 }
 
 func main() {
@@ -82,29 +102,13 @@ func main() {
 		log.Fatal("can work on at most a single shield file")
 	}
 
-	in := os.Stdin
-	out := os.Stdout
+	in := Stdio
+	out := opt.Output
 
-	// Set input file, if not stdin.
-	if len(args) == 1 && args[0] != Stdio {
-		in, err = os.Open(args[0])
-		defer in.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	if opt.Output == "" {
-		if in != os.Stdin {
-			opt.inferName = true // create the file in dispatch
-			out = nil
-		}
-	} else if opt.Output != Stdio { // we're given an output file explicitly
-		out, err = safeFileCreate(opt.Output)
-		defer out.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
+	if len(args) == 1 { // If given an input file, use that. Might still be Stdio.
+		in = args[0]
+	} else { // No input or output files. Assume Stdio for both input and output.
+		out = Stdio
 	}
 
 	err = dispatch(in, out)
