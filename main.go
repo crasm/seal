@@ -42,7 +42,10 @@ func dispatch(in, out string) error {
 	inFile := os.Stdin
 	outFile := os.Stdout
 
-	if in != Stdio && in != "" {
+	explicitIn := in != Stdio && in != ""
+	explicitOut := out != Stdio && out != ""
+
+	if explicitIn {
 		inFile, err = os.Open(in)
 		defer inFile.Close()
 		if err != nil {
@@ -50,18 +53,18 @@ func dispatch(in, out string) error {
 		}
 	}
 
-	if out != Stdio && out != "" {
+	implicitOut := explicitIn && out == ""
+
+	if explicitOut {
 		outFile, err = safeFileCreate(out)
 		if err != nil {
 			return err
 		}
 	}
 
-	inferName := out == "" && in != "" && in != Stdio
-
 	switch {
 	case opt.Create:
-		if inferName {
+		if implicitOut {
 			inferred := fmt.Sprint(in, FileExtension)
 			outFile, err = safeFileCreate(inferred)
 			defer outFile.Close()
@@ -77,7 +80,7 @@ func dispatch(in, out string) error {
 		}
 
 	case opt.Extract:
-		if inferName {
+		if implicitOut {
 			inferred := strings.TrimSuffix(in, FileExtension)
 			outFile, err = safeFileCreate(inferred)
 			defer outFile.Close()
