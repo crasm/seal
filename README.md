@@ -67,6 +67,7 @@ To generate a shield file by hand:
     ; sha256sum LICENSE
     229ab344b0b2e925d9e17df4ece337cd5f7bd4df96592db456d21c7bbacedede  LICENSE
     ; echo 'SHD%v0{<paste the hash>}' > LICENSE.shd
+    ; cat LICENSE >> LICENSE.shd
 
 To check a shielded file by hand:
 
