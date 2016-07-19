@@ -18,7 +18,7 @@ func isMutuallyExclusive(bools ...bool) bool {
 	return found <= 1
 }
 
-// Creates the file at the given location. If opt.Force is set, the existing
+// Creates the file at the given location. If force is set, the existing
 // file is clobbered.
 func createFile(path string, force bool) (*os.File, error) {
 	callopt := os.O_CREATE | os.O_RDWR
