@@ -5,7 +5,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -65,14 +64,14 @@ func dispatch(in, out string) error {
 			outFile, err = createFile(inferred, opt.Force)
 			defer outFile.Close()
 			if err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 		}
 		err = shield.Unwrap(inFile, outFile)
 	case opt.Dump:
 		fallthrough
 	default:
-		die("Dump command is not supported yet!")
+		die("Dump command is not supported yet.")
 	}
 
 	return err
