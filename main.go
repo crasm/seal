@@ -74,7 +74,7 @@ func main() {
 	out := opt.Output
 
 	if len(args) == 1 {
-		in = args[0] // We were given an Explicit input, so use it. Might still be Stdio.
+		in = args[0] // We were given an explicit input, so use it. Might still be Stdio.
 	} else if len(args) > 1 {
 		die("Too many input arguments. Expected only one.")
 	}
