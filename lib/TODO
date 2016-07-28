@@ -1,0 +1,11 @@
+Todo
+====
+
+- [ ] add library support for opening, reading, writing shield files
+- [ ] add actual error handling and output
+- [ ] write functional tests
+- [ ] write unit tests
+- [x] remove non-sha256 support
+- [x] truncbits, not truncbytes
+
+vim: ft=markdown

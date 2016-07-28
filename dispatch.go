@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/crasm/shield-lib"
+	shield "github.com/crasm/shield/lib"
 )
 
 const FileExtension = `.shd`
@@ -67,7 +67,7 @@ func dispatch(in, out string) error {
 				die(err)
 			}
 		}
-		err = shield.Unwrap(inFile, outFile)
+		err, _, _ = shield.Unwrap(inFile, outFile)
 	case opt.Dump:
 		fallthrough
 	default:
