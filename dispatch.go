@@ -69,9 +69,9 @@ func dispatch(in, out string) error {
 		}
 		err, _, _ = shield.Unwrap(inFile, outFile)
 	case opt.Dump:
-		fallthrough
+		err = shield.DumpHeader(inFile, outFile)
 	default:
-		die("Dump command is not supported yet.")
+		panic("No command specified")
 	}
 
 	return err

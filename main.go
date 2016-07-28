@@ -16,7 +16,8 @@ const Stdio = `-`
 var opt struct {
 	Create  bool `short:"C" long:"create" description:"Create a shielded file."`
 	Extract bool `short:"X" long:"extract" description:"Extract a contained file."`
-	Dump    bool `short:"D" long:"dump" description:"Dump shield header information (not supported yet)."`
+	Dump    bool `short:"D" long:"dump" description:"Dump raw shield header."`
+	// Info    bool `short:"I" long:"info" description:"View shield header information."`
 
 	Output string `short:"o" long:"output" description:"Write output to a file."`
 	Force  bool   `short:"f" long:"force" description:"Overwrite files."`

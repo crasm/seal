@@ -103,6 +103,18 @@ func Unwrap(in io.Reader, out io.Writer) (err error, claim, actual []byte) {
 	return nil, claim, actual
 }
 
+// Dump the raw shield header.
+func DumpHeader(in io.Reader, out io.Writer) error {
+	// TODO: Make this safer.
+	line, err := bufio.NewReader(in).ReadSlice('\n')
+	if err != nil {
+		return err
+	}
+
+	_, err = out.Write(line)
+	return err
+}
+
 // Take the hash of the data from in, write it to out, and return the hash.
 func teesum(in io.Reader, out io.Writer) ([]byte, error) {
 	digester := sha256.New()
@@ -119,11 +131,13 @@ func teesum(in io.Reader, out io.Writer) ([]byte, error) {
 // Pipes a shielded file (sans header) "in" to os.Stdout and verifies the
 // contents.
 func Pipe(in io.Reader) error {
+	// TODO
 	return nil
 }
 
 // Copies a file from in to out, verifying the shield contents.
 func Copy(in, out string) error {
+	// TODO
 	return nil
 }
 
