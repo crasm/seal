@@ -4,11 +4,11 @@ shield
 `shield` is a container format that lets you check for file corruption without
 dealing with separate checksum files.
 
-Distilled, shield is just a file with a prepended sha256 hash.
+Distilled, shield is just a file with a prepended sha512 hash.
 
 The header has the following format:
 
-    SHD%v0{e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+    SHD%v0{cf83e135}
 
 Above is a fully valid shielded file (ending in a newline), where the
 contents are completely empty.
@@ -49,7 +49,7 @@ Abstract goals
 1. Make checking file integrity easy and easier to automate, so that it can be
    done across filesystems, networking protocols, and operating systems.
 2. Keep the format simple enough to generate, extract, and verify file contents
-   "by hand" with basic *nix tools.
+   "by hand" with basic \*nix tools.
 
 Concrete goals
 -------------
@@ -64,8 +64,8 @@ Manual shield header generation
 
 To generate a shield file by hand:
 
-    ; sha256sum LICENSE
-    229ab344b0b2e925d9e17df4ece337cd5f7bd4df96592db456d21c7bbacedede  LICENSE
+    ; sha512sum LICENSE
+    53331cbf3149b47ba0be481c1cfd61d60282ce13652909a17a25626...  LICENSE
     ; echo 'SHD%v0{<paste the hash>}' > LICENSE.shd
     ; cat LICENSE >> LICENSE.shd
 
@@ -73,8 +73,8 @@ To check a shielded file by hand:
 
     ; head -n 1 LICENSE.shd
     ; tail -n +2 LICENSE.shd > LICENSE
-    ; sha256sum LICENSE
-      <compare the hashes visually>
+    ; sha512sum LICENSE
+      <compare the hashes starting from the left>
 
 
 vim: tw=80
