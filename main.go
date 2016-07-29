@@ -24,6 +24,8 @@ var opt struct {
 	//Timid      bool `short:"t" long:"timid" description:"Do not allow invalid files to be extracted."`
 	//Lax   bool `short:"l" long:"lax" description:"Allow partial and unverified extraction"`
 	//Quiet bool `short:"q" long:"quiet" description:"Silence all non-data output to stdout or stderr."`
+
+	Size int `short:"s" long:"size" description:"Truncated size of SHA512 hash in bits." default:"256"`
 }
 
 // Slightly complex exit-on-error function. Can handle arbitrary inputs,

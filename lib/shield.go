@@ -6,7 +6,7 @@ package shield
 import (
 	"bufio"
 	"bytes"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -20,13 +20,30 @@ const Magic = `SHD%`
 const Version = 0 // Current major version number for the library.
 
 const IdentLen = len(`SHD%v0`)
-const HeaderLen = len(`SHD%v0{e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}`) + len("\n")
+
+const maxBytes = sha512.Size
+
+// Returns the number of bytes in a header of size "size".
+func headerLen(bytes int) (int, error) {
+	if bytes <= 0 || bytes > maxBytes {
+		// TODO provide bounds
+		return -1, fmt.Errorf("shield: Invalid header length: %v", bytes*8)
+	}
+
+	// Hex encoding requires two bytes per byte, so we multiply by 2.
+	return IdentLen + len("{}\n") + bytes*2, nil
+}
 
 // Creates a shield on the data from in. Writes the shield header and the file
 // contents to out. In most cases, out should be an *os.File. However, anything
 // that supports seeking to the start is supported.
-func Wrap(in io.Reader, out io.WriteSeeker) error {
-	_, err := out.Seek(int64(HeaderLen), 0)
+func Wrap(in io.Reader, out io.WriteSeeker, truncLenBytes int) error {
+	s, err := headerLen(truncLenBytes)
+	if err != nil {
+		return err
+	}
+
+	_, err = out.Seek(int64(s), 0)
 	if err != nil {
 		return err
 	}
@@ -35,6 +52,8 @@ func Wrap(in io.Reader, out io.WriteSeeker) error {
 	if err != nil {
 		return err
 	}
+
+	calc = calc[:truncLenBytes]
 
 	_, err = out.Seek(0, 0)
 	if err != nil {
@@ -48,7 +67,7 @@ func Wrap(in io.Reader, out io.WriteSeeker) error {
 
 // Creates a shield on the data from in, buffering the input to a temporary
 // file.
-func WrapBuffered(in io.Reader, out io.Writer) error {
+func WrapBuffered(in io.Reader, out io.Writer, truncLenBytes int) error {
 	tmp, err := ioutil.TempFile("", "shield")
 	defer tmp.Close()
 	defer os.Remove(tmp.Name())
@@ -60,6 +79,8 @@ func WrapBuffered(in io.Reader, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+
+	calc = calc[:truncLenBytes]
 
 	header := createHeader(calc)
 
@@ -96,6 +117,8 @@ func Unwrap(in io.Reader, out io.Writer) (err error, claim, actual []byte) {
 		return err, nil, nil
 	}
 
+	actual = actual[:len(claim)]
+
 	if !bytes.Equal(claim, actual) {
 		return fmt.Errorf("shield: claim did not match actual hash"), claim, actual
 	}
@@ -117,7 +140,7 @@ func DumpHeader(in io.Reader, out io.Writer) error {
 
 // Take the hash of the data from in, write it to out, and return the hash.
 func teesum(in io.Reader, out io.Writer) ([]byte, error) {
-	digester := sha256.New()
+	digester := sha512.New()
 
 	tee := bufio.NewReader(io.TeeReader(in, out))
 	_, err := tee.WriteTo(digester)
@@ -146,14 +169,25 @@ func createHeader(claim []byte) string {
 	return fmt.Sprintf("%sv%d{%s}\n", Magic, Version, hexclaim)
 }
 
+// TODO: Should parse into a struct.
 func parseHeader(in io.Reader) ([]byte, error) {
-	header := make([]byte, HeaderLen)
-	n, err := in.Read(header)
-	if err != nil && err != io.EOF {
-		return nil, err
-	} else if n < HeaderLen {
-		return nil, fmt.Errorf("shield: Couldn't read a full header.")
+	limit, _ := headerLen(maxBytes)
+	header := make([]byte, limit)
+
+	// We read byte-by-byte because we don't know how long the header is.
+	var i int
+	for i = 0; i < limit; i++ {
+		_, err := in.Read(header[i : i+1])
+		if err != nil && err != io.EOF {
+			fmt.Errorf("shield: Error reading header: %v", err)
+		}
+
+		// TODO: Should be terminated by `}\n` or `}\r\n`
+		if header[i] == '\n' {
+			break
+		}
 	}
+	header = header[:i+1] // Reslice so we don't have trailing zeros.
 
 	ident := header[:IdentLen]
 
@@ -166,7 +200,11 @@ func parseHeader(in io.Reader) ([]byte, error) {
 
 	hexClaim := strings.TrimFunc(string(header[IdentLen:]),
 		func(r rune) bool {
-			return unicode.IsSpace(r) || r == '{' || r == '}'
+			switch r {
+			case '{', '}':
+				return true
+			}
+			return unicode.IsSpace(r)
 		},
 	)
 

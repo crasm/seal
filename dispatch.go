@@ -52,10 +52,15 @@ func dispatch(in, out string) error {
 			}
 		}
 
+		bytes, err := bitsToBytes(opt.Size)
+		if err != nil {
+			return err
+		}
+
 		if outFile == os.Stdout {
-			err = shield.WrapBuffered(inFile, outFile)
+			err = shield.WrapBuffered(inFile, outFile, bytes)
 		} else {
-			err = shield.Wrap(inFile, outFile)
+			err = shield.Wrap(inFile, outFile, bytes)
 		}
 
 	case opt.Extract:
