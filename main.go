@@ -16,6 +16,7 @@ const Stdio = `-`
 var opt struct {
 	Create  bool `short:"C" long:"create" description:"Create a shielded file."`
 	Extract bool `short:"X" long:"extract" description:"Extract a contained file."`
+	Verify  bool `short:"V" long:"verify" description:"Verify and check for corruption."`
 	Dump    bool `short:"D" long:"dump" description:"Dump raw shield header."`
 	// Info    bool `short:"I" long:"info" description:"View shield header information."`
 
@@ -82,7 +83,7 @@ func main() {
 		die("Too many input arguments. Expected only one.")
 	}
 
-	if !isMutuallyExclusive(opt.Create, opt.Extract, opt.Dump) {
+	if !isMutuallyExclusive(opt.Create, opt.Extract, opt.Verify, opt.Dump) {
 		die("You can specify only one primary command at a time.")
 	}
 

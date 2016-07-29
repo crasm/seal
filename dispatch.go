@@ -4,7 +4,9 @@ package main
 // This code is open source under the ISC license. See LICENSE for details.
 
 import (
+	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -37,6 +39,9 @@ func dispatch(in, out string) error {
 	if explicitOut {
 		outFile, err = createFile(out, opt.Force)
 		if err != nil {
+			// TODO: If we can't truncate, then try to append. This
+			// should make using /dev/stderr and /dev/stdout work as
+			// expected.
 			return err
 		}
 	}
@@ -73,6 +78,13 @@ func dispatch(in, out string) error {
 			}
 		}
 		err, _, _ = shield.Unwrap(inFile, outFile)
+
+	case opt.Verify:
+		var claim, actual []byte
+		err, claim, actual = shield.Unwrap(inFile, ioutil.Discard)
+		fmt.Fprintf(outFile, "claim:  %v\nactual: %v\n",
+			hex.EncodeToString(claim), hex.EncodeToString(actual))
+
 	case opt.Dump:
 		err = shield.DumpHeader(inFile, outFile)
 	default:
