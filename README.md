@@ -7,7 +7,8 @@ likely be introduced in the spec and the tool itself until 1.0.**
 `shield` is a container format that lets you check for file corruption without
 dealing with separate checksum files.
 
-Distilled, shield is just a file with a prepended sha512 hash.
+Distilled, shield is just a file with a prepended sha512 hash, optionally
+truncated.
 
 The header has the following format:
 
