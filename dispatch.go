@@ -63,9 +63,9 @@ func dispatch(in, out string) error {
 		}
 
 		if outFile == os.Stdout {
-			err = shield.WrapBuffered(inFile, outFile, bytes)
+			_, err = shield.WrapBuffered(inFile, outFile, bytes)
 		} else {
-			err = shield.Wrap(inFile, outFile, bytes)
+			_, err = shield.Wrap(inFile, outFile, bytes)
 		}
 
 	case opt.Extract:
@@ -80,11 +80,11 @@ func dispatch(in, out string) error {
 		_, err = shield.Unwrap(inFile, outFile)
 
 	case opt.Verify:
-		var shd *shield.Shield
+		var shd *shield.UnwrappedShield
 		shd, err = shield.Unwrap(inFile, ioutil.Discard)
 		fmt.Fprintf(outFile, "claim:  %v\nactual: %v\n",
-			hex.EncodeToString(shd.ClaimedHash),
-			hex.EncodeToString(shd.ActualHash))
+			hex.EncodeToString(shd.Claim),
+			hex.EncodeToString(shd.Actual))
 
 	case opt.Dump:
 		err = shield.DumpHeader(inFile, outFile)

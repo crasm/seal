@@ -24,22 +24,22 @@ const IdentLen = len(`SHD%v0`)
 
 const maxBytes = sha512.Size
 
-// StoredShield is the information read from a shield header.
-type StoredShield struct {
-	Magic       string
-	Version     int
-	ClaimedHash []byte
+// Shield is the information read from a shield header.
+type Shield struct {
+	Magic   string
+	Version int
+	Claim   []byte
 }
 
 // Shield contains shield file data.
 // TODO: Clarify.
-type Shield struct {
-	StoredShield
-	ActualHash []byte
+type UnwrappedShield struct {
+	Shield
+	Actual []byte
 }
 
 // Returns the number of bytes in a header of size "size".
-func headerLen(bytes int) (int, error) {
+func headerSize(bytes int) (int, error) {
 	if bytes <= 0 || bytes > maxBytes {
 		// TODO provide bounds
 		return -1, fmt.Errorf("shield: Invalid header length: %v", bytes*8)
@@ -52,92 +52,82 @@ func headerLen(bytes int) (int, error) {
 // Creates a shield on the data from in. Writes the shield header and the file
 // contents to out. In most cases, out should be an *os.File. However, anything
 // that supports seeking to the start is supported.
-func Wrap(in io.Reader, out io.WriteSeeker, truncLenBytes int) error {
-	s, err := headerLen(truncLenBytes)
+//
+// Returns a Shield describing the header of the shield file just created.
+// trunc is bytes, not bits
+func Wrap(in io.Reader, out io.WriteSeeker, trunc int) (*Shield, error) {
+	size, err := headerSize(trunc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = out.Seek(int64(s), 0)
+	_, err = out.Seek(int64(size), 0)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	shd := &Shield{}
 
 	calc, err := teesum(in, out)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	calc = calc[:truncLenBytes]
+	calc = calc[:trunc]
 
 	_, err = out.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-
-	header := createHeader(calc)
-	_, err = out.Write([]byte(header))
-	return err
-}
-
-// Creates a shield on the data from in, buffering the input to a temporary
-// file.
-func WrapBuffered(in io.Reader, out io.Writer, truncLenBytes int) error {
-	tmp, err := ioutil.TempFile("", "shield")
-	defer tmp.Close()
-	defer os.Remove(tmp.Name())
-	if err != nil {
-		return err
-	}
-
-	calc, err := teesum(in, tmp)
-	if err != nil {
-		return err
-	}
-
-	calc = calc[:truncLenBytes]
-
-	header := createHeader(calc)
-
-	_, err = tmp.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-
-	outwr := bufio.NewWriter(out)
-	_, err = outwr.WriteString(header)
-	if err != nil {
-		return err
-	}
-
-	_, err = outwr.ReadFrom(tmp)
-	if err != nil {
-		return err
-	}
-
-	return outwr.Flush()
-}
-
-// Writes the file contents after the header to out. If the claim does not
-// validate (match the actual hash), a non-nil error is returned.
-func Unwrap(in io.Reader, out io.Writer) (*Shield, error) {
-	shd := &Shield{}
-
-	sshd, err := parseHeader(in)
 	if err != nil {
 		return shd, err
 	}
 
-	shd.StoredShield = *sshd
+	header := createHeader(calc)
+	_, err = out.Write([]byte(header))
+	return shd, err
+}
+
+// Creates a shield on the data from in, buffering the input to a temporary
+// file.
+func WrapBuffered(in io.Reader, out io.Writer, trunc int) (*Shield, error) {
+	tmp, err := ioutil.TempFile("", "shield")
+	defer tmp.Close()
+	defer os.Remove(tmp.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	// Do the actual wrapping, but output to a temporary file.
+	shd, err := Wrap(in, tmp, trunc)
+	if err != nil {
+		return shd, err
+	}
+
+	outwr := bufio.NewWriter(out)
+	_, err = outwr.ReadFrom(tmp)
+	if err != nil {
+		return shd, err
+	}
+
+	return shd, outwr.Flush()
+}
+
+// Writes the file contents after the header to out. If the claim does not
+// validate (match the actual hash), a non-nil error is returned.
+func Unwrap(in io.Reader, out io.Writer) (*UnwrappedShield, error) {
+	s, err := parseHeader(in)
+	if err != nil {
+		return nil, err
+	}
+
+	shd := &UnwrappedShield{Shield: *s}
 
 	actual, err := teesum(in, out)
 	if err != nil {
 		return shd, err
 	}
 
-	shd.ActualHash = actual[:len(sshd.ClaimedHash)]
+	shd.Actual = actual[:len(shd.Claim)]
 
-	if !bytes.Equal(shd.ClaimedHash, shd.ActualHash) {
+	if !bytes.Equal(shd.Claim, shd.Actual) {
 		// TODO: Make this a const error.
 		err = fmt.Errorf("shield: claim did not match actual hash")
 	}
@@ -177,10 +167,10 @@ func createHeader(claim []byte) string {
 
 // Parses the header of a shield file. Does not read beyond the
 // header.
-func parseHeader(in io.Reader) (*StoredShield, error) {
+func parseHeader(in io.Reader) (*Shield, error) {
 	var err error
 
-	limit, _ := headerLen(maxBytes)
+	limit, _ := headerSize(maxBytes)
 	header := make([]byte, limit)
 
 	// We read byte-by-byte because we don't know how long the header is.
@@ -198,29 +188,29 @@ func parseHeader(in io.Reader) (*StoredShield, error) {
 	}
 	header = header[:i+1] // Reslice so we don't have trailing zeros.
 
-	sshd := &StoredShield{}
+	shd := &Shield{}
 
-	sshd.Magic = string(header[:len(Magic)]) // example: `SHD%`
-	if sshd.Magic != Magic {
-		return sshd, fmt.Errorf("Got wrong magic number: %v", sshd.Magic)
+	shd.Magic = string(header[:len(Magic)]) // example: `SHD%`
+	if shd.Magic != Magic {
+		return shd, fmt.Errorf("Got wrong magic number: %v", shd.Magic)
 	}
 
 	byteVersion := header[len(Magic) : len(Magic)+2] // example: `v0`
 	uint64Version, err := strconv.ParseUint(
 		string(byteVersion[1:]), 10, 8) // example: `0`
 	if err != nil {
-		return sshd, fmt.Errorf("Couldn't parse version: %v", err)
+		return shd, fmt.Errorf("Couldn't parse version: %v", err)
 	}
 
-	sshd.Version = int(uint64Version)
-	if sshd.Version != Version {
-		return nil, fmt.Errorf("Unsupported version: %v", sshd.Version)
+	shd.Version = int(uint64Version)
+	if shd.Version != Version {
+		return nil, fmt.Errorf("Unsupported version: %v", shd.Version)
 	}
 
 	hexClaim := strings.TrimFunc(string(header[IdentLen:]),
 		func(r rune) bool { return unicode.IsSpace(r) || r == '{' || r == '}' },
 	)
-	sshd.ClaimedHash, err = hex.DecodeString(hexClaim)
+	shd.Claim, err = hex.DecodeString(hexClaim)
 
-	return sshd, err
+	return shd, err
 }
