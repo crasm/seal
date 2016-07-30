@@ -170,19 +170,6 @@ func teesum(in io.Reader, out io.Writer) ([]byte, error) {
 	return digester.Sum(nil), nil
 }
 
-// Pipes a shielded file (sans header) "in" to os.Stdout and verifies the
-// contents.
-func Pipe(in io.Reader) error {
-	// TODO
-	return nil
-}
-
-// Copies a file from in to out, verifying the shield contents.
-func Copy(in, out string) error {
-	// TODO
-	return nil
-}
-
 func createHeader(claim []byte) string {
 	hexclaim := hex.EncodeToString(claim)
 	return fmt.Sprintf("%sv%d{%s}\n", Magic, Version, hexclaim)
