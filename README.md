@@ -1,6 +1,9 @@
 shield
 ======
 
+**Warning: This project is under heavy development. Breaking changes will most
+likely be introduced in the spec and the tool itself until 1.0.**
+
 `shield` is a container format that lets you check for file corruption without
 dealing with separate checksum files.
 
@@ -56,7 +59,7 @@ Concrete goals
 
 - [ ] Signify support.
 - [ ] Backup client that uses shield to verify integrity while copying files.
-- [ ] Browser plugins for automatic verification and extraction of downloads.
+- [ ] Browser plugins and apps for automatic verification and extraction of downloads.
 - [ ] HTTP middleware for go.
 
 Manual shield header generation
@@ -77,4 +80,4 @@ To check a shielded file by hand:
       <compare the hashes starting from the left>
 
 
-vim: tw=80
+vim: tw=80 et sw=4 sts=4
