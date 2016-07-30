@@ -34,7 +34,7 @@ Potential use cases
 What I'm using it for
 ---------------------
 
-Nothing. Didn't you read the warning at the top?
+Nothing yet.
 
 However, the reason why I started this was because I became paranoid of disk rot
 when one of my music files became corrupted during a copy, and the best
