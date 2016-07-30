@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -22,6 +23,20 @@ const Version = 0 // Current major version number for the library.
 const IdentLen = len(`SHD%v0`)
 
 const maxBytes = sha512.Size
+
+// StoredShield is the information read from a shield header.
+type StoredShield struct {
+	Magic       string
+	Version     int
+	ClaimedHash []byte
+}
+
+// Shield contains shield file data.
+// TODO: Clarify.
+type Shield struct {
+	StoredShield
+	ActualHash []byte
+}
 
 // Returns the number of bytes in a header of size "size".
 func headerLen(bytes int) (int, error) {
@@ -105,30 +120,34 @@ func WrapBuffered(in io.Reader, out io.Writer, truncLenBytes int) error {
 
 // Writes the file contents after the header to out. If the claim does not
 // validate (match the actual hash), a non-nil error is returned.
-func Unwrap(in io.Reader, out io.Writer) (err error, claim, actual []byte) {
+func Unwrap(in io.Reader, out io.Writer) (*Shield, error) {
+	shd := &Shield{}
 
-	claim, err = parseHeader(in)
+	sshd, err := parseHeader(in)
 	if err != nil {
-		return err, nil, nil
+		return shd, err
 	}
 
-	actual, err = teesum(in, out)
+	shd.StoredShield = *sshd
+
+	actual, err := teesum(in, out)
 	if err != nil {
-		return err, nil, nil
+		return shd, err
 	}
 
-	actual = actual[:len(claim)]
+	shd.ActualHash = actual[:len(sshd.ClaimedHash)]
 
-	if !bytes.Equal(claim, actual) {
-		return fmt.Errorf("shield: claim did not match actual hash"), claim, actual
+	if !bytes.Equal(shd.ClaimedHash, shd.ActualHash) {
+		// TODO: Make this a const error.
+		err = fmt.Errorf("shield: claim did not match actual hash")
 	}
 
-	return nil, claim, actual
+	return shd, err
 }
 
 // Dump the raw shield header.
 func DumpHeader(in io.Reader, out io.Writer) error {
-	// TODO: Make this safer.
+	// TODO: Make this safer. Search for `}\n` or `}\r\n`
 	line, err := bufio.NewReader(in).ReadSlice('\n')
 	if err != nil {
 		return err
@@ -169,8 +188,11 @@ func createHeader(claim []byte) string {
 	return fmt.Sprintf("%sv%d{%s}\n", Magic, Version, hexclaim)
 }
 
-// TODO: Should parse into a struct.
-func parseHeader(in io.Reader) ([]byte, error) {
+// Parses the header of a shield file. Does not read beyond the
+// header.
+func parseHeader(in io.Reader) (*StoredShield, error) {
+	var err error
+
 	limit, _ := headerLen(maxBytes)
 	header := make([]byte, limit)
 
@@ -189,24 +211,29 @@ func parseHeader(in io.Reader) ([]byte, error) {
 	}
 	header = header[:i+1] // Reslice so we don't have trailing zeros.
 
-	ident := header[:IdentLen]
+	sshd := &StoredShield{}
 
-	if m := string(ident[:len(Magic)]); m != Magic {
-		return nil, fmt.Errorf("Got wrong magic number: %s", m)
+	sshd.Magic = string(header[:len(Magic)]) // example: `SHD%`
+	if sshd.Magic != Magic {
+		return sshd, fmt.Errorf("Got wrong magic number: %v", sshd.Magic)
 	}
-	if v := string(ident[len(Magic):]); v != fmt.Sprintf("v%d", Version) {
-		return nil, fmt.Errorf("Got wrong version: %s", v)
+
+	byteVersion := header[len(Magic) : len(Magic)+2] // example: `v0`
+	uint64Version, err := strconv.ParseUint(
+		string(byteVersion[1:]), 10, 8) // example: `0`
+	if err != nil {
+		return sshd, fmt.Errorf("Couldn't parse version: %v", err)
+	}
+
+	sshd.Version = int(uint64Version)
+	if sshd.Version != Version {
+		return nil, fmt.Errorf("Unsupported version: %v", sshd.Version)
 	}
 
 	hexClaim := strings.TrimFunc(string(header[IdentLen:]),
-		func(r rune) bool {
-			switch r {
-			case '{', '}':
-				return true
-			}
-			return unicode.IsSpace(r)
-		},
+		func(r rune) bool { return unicode.IsSpace(r) || r == '{' || r == '}' },
 	)
+	sshd.ClaimedHash, err = hex.DecodeString(hexClaim)
 
-	return hex.DecodeString(hexClaim)
+	return sshd, err
 }

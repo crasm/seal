@@ -77,13 +77,14 @@ func dispatch(in, out string) error {
 				die(err)
 			}
 		}
-		err, _, _ = shield.Unwrap(inFile, outFile)
+		_, err = shield.Unwrap(inFile, outFile)
 
 	case opt.Verify:
-		var claim, actual []byte
-		err, claim, actual = shield.Unwrap(inFile, ioutil.Discard)
+		var shd *shield.Shield
+		shd, err = shield.Unwrap(inFile, ioutil.Discard)
 		fmt.Fprintf(outFile, "claim:  %v\nactual: %v\n",
-			hex.EncodeToString(claim), hex.EncodeToString(actual))
+			hex.EncodeToString(shd.ClaimedHash),
+			hex.EncodeToString(shd.ActualHash))
 
 	case opt.Dump:
 		err = shield.DumpHeader(inFile, outFile)
