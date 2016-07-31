@@ -63,8 +63,6 @@ func help(p *flags.Parser) {
 }
 
 func main() {
-	logger.Info("Starting...")
-
 	parser := flags.NewParser(&opt, flags.Default)
 	args, err := parser.Parse()
 	if err != nil {

@@ -67,7 +67,6 @@ func dispatch(in, out *os.File) error {
 	case opt.Create:
 		if implicitOut {
 			inferred := fmt.Sprint(in.Name(), FileExtension)
-			logger.Debug("Inferring output file as %v", inferred)
 			out, err = createFile(inferred, opt.Force)
 			defer out.Close()
 			if err != nil {
@@ -84,7 +83,6 @@ func dispatch(in, out *os.File) error {
 	case opt.Extract:
 		if implicitOut {
 			inferred := strings.TrimSuffix(in.Name(), FileExtension)
-			logger.Debug("Inferring output file as %s", inferred)
 			out, err = createFile(inferred, opt.Force)
 			defer out.Close()
 			if err != nil {
