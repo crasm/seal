@@ -9,6 +9,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -38,6 +39,25 @@ type UnwrappedShield struct {
 	Actual []byte
 }
 
+type Digester interface {
+	Wrap(io.Reader, io.WriteSeeker) (*Shield, error)
+	WrapBuffered(io.Reader, io.Writer) (*Shield, error)
+	Unwrap(io.Reader, io.Writer) (*UnwrappedShield, error)
+}
+
+type digesterSha512 struct {
+	hash  hash.Hash
+	trunc int
+}
+
+// type digesterSignify struct{}
+
+// TODO NEXT: This solves the problem of "where do I put trunclen?" But
+// now, need to properly implement the rest of it.
+func NewDigesterSha512(trunc int) Digester {
+	return &digesterSha512{hash: sha512.New(), trunc: trunc}
+}
+
 // Returns the number of bytes in a header of size "size".
 func headerSize(bytes int) (int, error) {
 	if bytes <= 0 || bytes > maxBytes {
@@ -55,8 +75,8 @@ func headerSize(bytes int) (int, error) {
 //
 // Returns a Shield describing the header of the shield file just created.
 // trunc is bytes, not bits
-func Wrap(in io.Reader, out io.WriteSeeker, trunc int) (*Shield, error) {
-	size, err := headerSize(trunc)
+func (d *digesterSha512) Wrap(in io.Reader, out io.WriteSeeker) (*Shield, error) {
+	size, err := headerSize(d.trunc)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +93,7 @@ func Wrap(in io.Reader, out io.WriteSeeker, trunc int) (*Shield, error) {
 		return nil, err
 	}
 
-	calc = calc[:trunc]
+	calc = calc[:d.trunc]
 
 	_, err = out.Seek(0, 0)
 	if err != nil {
@@ -87,7 +107,7 @@ func Wrap(in io.Reader, out io.WriteSeeker, trunc int) (*Shield, error) {
 
 // Creates a shield on the data from in, buffering the input to a temporary
 // file.
-func WrapBuffered(in io.Reader, out io.Writer, trunc int) (*Shield, error) {
+func (d *digesterSha512) WrapBuffered(in io.Reader, out io.Writer) (*Shield, error) {
 	tmp, err := ioutil.TempFile("", "shield")
 	defer tmp.Close()
 	defer os.Remove(tmp.Name())
@@ -96,7 +116,7 @@ func WrapBuffered(in io.Reader, out io.Writer, trunc int) (*Shield, error) {
 	}
 
 	// Do the actual wrapping, but output to a temporary file.
-	shd, err := Wrap(in, tmp, trunc)
+	shd, err := d.Wrap(in, tmp)
 	if err != nil {
 		return shd, err
 	}
@@ -112,7 +132,7 @@ func WrapBuffered(in io.Reader, out io.Writer, trunc int) (*Shield, error) {
 
 // Writes the file contents after the header to out. If the claim does not
 // validate (match the actual hash), a non-nil error is returned.
-func Unwrap(in io.Reader, out io.Writer) (*UnwrappedShield, error) {
+func (d *digesterSha512) Unwrap(in io.Reader, out io.Writer) (*UnwrappedShield, error) {
 	s, err := parseHeader(in)
 	if err != nil {
 		return nil, err

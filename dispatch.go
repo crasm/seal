@@ -46,6 +46,14 @@ func dispatch(in, out string) error {
 		}
 	}
 
+	// TODO: Move this validation code somewhere else. (Library?)
+	bytes, err := bitsToBytes(opt.Size)
+	if err != nil {
+		return err
+	}
+
+	digester := shield.NewDigesterSha512(bytes)
+
 	switch {
 	case opt.Create:
 		if implicitOut {
@@ -57,15 +65,10 @@ func dispatch(in, out string) error {
 			}
 		}
 
-		bytes, err := bitsToBytes(opt.Size)
-		if err != nil {
-			return err
-		}
-
 		if outFile == os.Stdout {
-			_, err = shield.WrapBuffered(inFile, outFile, bytes)
+			_, err = digester.WrapBuffered(inFile, outFile)
 		} else {
-			_, err = shield.Wrap(inFile, outFile, bytes)
+			_, err = digester.Wrap(inFile, outFile)
 		}
 
 	case opt.Extract:
@@ -77,11 +80,11 @@ func dispatch(in, out string) error {
 				die(err)
 			}
 		}
-		_, err = shield.Unwrap(inFile, outFile)
+		_, err = digester.Unwrap(inFile, outFile)
 
 	case opt.Verify:
 		var shd *shield.UnwrappedShield
-		shd, err = shield.Unwrap(inFile, ioutil.Discard)
+		shd, err = digester.Unwrap(inFile, ioutil.Discard)
 		fmt.Fprintf(outFile, "claim:  %v\nactual: %v\n",
 			hex.EncodeToString(shd.Claim),
 			hex.EncodeToString(shd.Actual))
