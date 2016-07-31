@@ -27,6 +27,8 @@ var opt struct {
 	//Quiet bool `short:"q" long:"quiet" description:"Silence all non-data output to stdout or stderr."`
 
 	Size int `short:"s" long:"size" description:"Truncated size of SHA512 hash in bits." default:"256"`
+
+	Debug bool `long:"debug" description:"Log debug information."`
 }
 
 // Slightly complex exit-on-error function. Can handle arbitrary inputs,
@@ -61,6 +63,8 @@ func help(p *flags.Parser) {
 }
 
 func main() {
+	logger.Info("Starting...")
+
 	parser := flags.NewParser(&opt, flags.Default)
 	args, err := parser.Parse()
 	if err != nil {
@@ -87,7 +91,14 @@ func main() {
 		die("You can specify only one primary command at a time.")
 	}
 
-	err = dispatch(in, out)
+	inFile, outFile, err := determineInputOutput(in, out)
+	defer inFile.Close()
+	defer outFile.Close()
+	if err != nil {
+		die(err)
+	}
+
+	err = dispatch(inFile, outFile)
 	if err != nil {
 		die(err)
 	}
