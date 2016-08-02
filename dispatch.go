@@ -17,36 +17,29 @@ const FileExtension = `.shd`
 
 // Determine the proper input and output files. If outFile can't be
 // determined (is implicit), then nil is returned for outFile.
-func determineInputOutput(inArg, outArg string) (inFile, outFile *os.File, err error) {
-	inFile = os.Stdin
-	outFile = os.Stdout
+// TODO: This is hard to test. Should it return a filename and not
+// actually open the files?
+func determineInputOutput(inArg, outArg string) (in, out string) {
+	in = os.Stdin.Name()
+	out = os.Stdout.Name()
 
 	explicitIn := inArg != Stdio && inArg != ""
 	explicitOut := outArg != Stdio && outArg != ""
 
 	if explicitIn {
-		inFile, err = os.Open(inArg)
-		if err != nil {
-			return
-		}
+		in = inArg
 	}
 
 	if explicitOut {
-		outFile, err = createFile(outArg, opt.Force)
-		if err != nil {
-			// TODO: If we can't truncate, then try to append. This
-			// should make using /dev/stderr and /dev/stdout work as
-			// expected.
-			return
-		}
+		out = outArg
 	}
 
 	implicitOut := explicitIn && outArg == ""
 	if implicitOut {
-		outFile = nil
+		out = ""
 	}
 
-	return inFile, outFile, nil
+	return in, out
 }
 
 // Figures out input and output files and calls the appropiate shield library

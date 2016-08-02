@@ -76,11 +76,11 @@ func main() {
 		os.Exit(0)
 	}
 
-	in := Stdio
-	out := opt.Output
+	inArg := Stdio
+	outArg := opt.Output
 
 	if len(args) == 1 {
-		in = args[0] // We were given an explicit input, so use it. Might still be Stdio.
+		inArg = args[0] // We were given an explicit input, so use it. Might still be Stdio.
 	} else if len(args) > 1 {
 		die("Too many input arguments. Expected only one.")
 	}
@@ -89,8 +89,17 @@ func main() {
 		die("You can specify only one primary command at a time.")
 	}
 
-	inFile, outFile, err := determineInputOutput(in, out)
+	in, out := determineInputOutput(inArg, outArg)
+
+	// if out == "" && opt.Create // TODO: what?
+
+	inFile, err := os.Open(in)
 	defer inFile.Close()
+	if err != nil {
+		die(err)
+	}
+
+	outFile, err := createFile(out, opt.Force)
 	defer outFile.Close()
 	if err != nil {
 		die(err)

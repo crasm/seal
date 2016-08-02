@@ -167,6 +167,33 @@ func DumpHeader(in io.Reader, out io.Writer) error {
 	return err
 }
 
+/*
+// TODO: This has to go in a separate file. The current stuff here has
+// to go somewhere else also, like "wrap".
+type File interface {
+}
+
+type shieldFile struct {
+	osFile *os.File
+	offset int // where content begins
+}
+
+func Open(name string) (*File, error) {
+}
+
+func Create(name string) (*File, error) {
+}
+
+// TODO: This and rest of methods on File, such as Sync
+// Closes a file and writes an updated header if it was changed.
+func (f *shieldFile) Close() error {
+}
+
+// synchronous
+func (f *shieldFile) Sync() error {
+}
+*/
+
 // Take the hash of the data from in, write it to out, and return the hash.
 func teesum(in io.Reader, out io.Writer) ([]byte, error) {
 	digester := sha512.New()
