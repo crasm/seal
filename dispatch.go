@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -19,7 +20,7 @@ const FileExtension = `.shd`
 // determined (is implicit), then nil is returned for outFile.
 // TODO: This is hard to test. Should it return a filename and not
 // actually open the files?
-func determineInputOutput(inArg, outArg string) (in, out string) {
+func determineInputOutput(cmd Command, inArg, outArg string) (in, out string, err error) {
 	in = os.Stdin.Name()
 	out = os.Stdout.Name()
 
@@ -36,10 +37,21 @@ func determineInputOutput(inArg, outArg string) (in, out string) {
 
 	implicitOut := explicitIn && outArg == ""
 	if implicitOut {
-		out = ""
+		switch cmd {
+		case Create:
+			out = in + FileExtension
+		case Extract:
+			inferred := strings.TrimSuffix(in, FileExtension)
+			if inferred == in {
+				err = errors.New("output filename required")
+			}
+			out = inferred
+		default:
+			// If it's none of the above, leave it as Stdio.
+		}
 	}
 
-	return in, out
+	return in, out, err
 }
 
 // Figures out input and output files and calls the appropiate shield library

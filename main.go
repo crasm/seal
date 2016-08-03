@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 
@@ -62,6 +63,38 @@ func help(p *flags.Parser) {
 	os.Stderr.WriteString("\n")
 }
 
+type Command int
+
+const (
+	Create Command = iota
+	Extract
+	Verify
+	Dump
+)
+
+func getCommand() (Command, error) {
+	var cmd Command
+
+	if !isMutuallyExclusive(opt.Create, opt.Extract, opt.Verify, opt.Dump) {
+		return cmd, errors.New("too many primary commands")
+	}
+
+	switch {
+	case opt.Create:
+		cmd = Create
+	case opt.Extract:
+		cmd = Extract
+	case opt.Verify:
+		cmd = Verify
+	case opt.Dump:
+		cmd = Dump
+	default:
+		return cmd, errors.New("no command specified")
+	}
+
+	return cmd, nil
+}
+
 func main() {
 	parser := flags.NewParser(&opt, flags.Default)
 	args, err := parser.Parse()
@@ -76,6 +109,12 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Figure out what we're supposed to do.
+	cmd, err := getCommand()
+	if err != nil {
+		die(err)
+	}
+
 	inArg := Stdio
 	outArg := opt.Output
 
@@ -85,13 +124,10 @@ func main() {
 		die("Too many input arguments. Expected only one.")
 	}
 
-	if !isMutuallyExclusive(opt.Create, opt.Extract, opt.Verify, opt.Dump) {
-		die("You can specify only one primary command at a time.")
+	in, out, err := determineInputOutput(cmd, inArg, outArg)
+	if err != nil {
+		die(err)
 	}
-
-	in, out := determineInputOutput(inArg, outArg)
-
-	// if out == "" && opt.Create // TODO: what?
 
 	inFile, err := os.Open(in)
 	defer inFile.Close()
