@@ -93,6 +93,33 @@ func getCommand() (Command, error) {
 	return cmd, nil
 }
 
+const DefaultPerm = 0644
+
+func openInputOutput(cmd Command, in, out string) (inFile, outFile *os.File, err error) {
+	inFile, err = os.Open(in)
+	if err != nil {
+		return
+	}
+
+	if out == os.Stdout.Name() {
+		outFile, err = os.OpenFile(out, os.O_WRONLY|os.O_APPEND, DefaultPerm)
+		return
+	}
+
+	// If we got here, we're actually creating a new file!
+
+	callopt := os.O_CREATE | os.O_RDWR
+	if opt.Force {
+		callopt |= os.O_TRUNC
+	} else {
+		callopt |= os.O_EXCL
+	}
+
+	outFile, err = os.OpenFile(out, callopt, DefaultPerm)
+
+	return
+}
+
 func main() {
 	parser := flags.NewParser(&opt, flags.Default)
 	args, err := parser.Parse()
@@ -116,7 +143,8 @@ func main() {
 	var inArg, outArg string
 
 	if len(args) == 1 {
-		inArg = args[0] // We were given an explicit input, so use it. Might still be stdio ("-").
+		// We were given an explicit input, so use it. Might still be stdio ("-").
+		inArg = args[0]
 	} else if len(args) > 1 {
 		die("Too many input arguments. Expected only one.")
 	}
@@ -128,19 +156,11 @@ func main() {
 		die(err)
 	}
 
-	inFile, err := os.Open(in)
+	inFile, outFile, err := openInputOutput(cmd, in, out)
 	defer inFile.Close()
-	if err != nil {
-		die(err)
-	}
-
-	outFile, err := createFile(out, opt.Force)
 	defer outFile.Close()
-	if err != nil {
-		die(err)
-	}
 
-	err = dispatch(inFile, outFile)
+	err = dispatch(cmd, inFile, outFile)
 	if err != nil {
 		die(err)
 	}
