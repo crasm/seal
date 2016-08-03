@@ -80,7 +80,8 @@ func main() {
 		die(err)
 	}
 
-	var inArg, outArg string
+	inArg := ""
+	outArg := opt.Output
 
 	if len(args) == 1 {
 		// We were given an explicit input, so use it. Might still be stdio ("-").
@@ -88,8 +89,6 @@ func main() {
 	} else if len(args) > 1 {
 		die("Too many input arguments. Expected only one.")
 	}
-
-	outArg = opt.Output
 
 	in, out, err := determineInputOutput(cmd, inArg, outArg)
 	if err != nil {
