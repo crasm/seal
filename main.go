@@ -5,7 +5,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 
@@ -61,65 +60,6 @@ func help(p *flags.Parser) {
 	os.Stderr.WriteString("\n")
 }
 
-type Command int
-
-const (
-	Create Command = iota
-	Extract
-	Verify
-	Dump
-)
-
-func getCommand() (Command, error) {
-	var cmd Command
-
-	if !isMutuallyExclusive(opt.Create, opt.Extract, opt.Verify, opt.Dump) {
-		return cmd, errors.New("too many primary commands")
-	}
-
-	switch {
-	case opt.Create:
-		cmd = Create
-	case opt.Extract:
-		cmd = Extract
-	case opt.Verify:
-		cmd = Verify
-	case opt.Dump:
-		cmd = Dump
-	default:
-		return cmd, errors.New("no command specified")
-	}
-
-	return cmd, nil
-}
-
-const DefaultPerm = 0644
-
-func openInputOutput(cmd Command, in, out string) (inFile, outFile *os.File, err error) {
-	inFile, err = os.Open(in)
-	if err != nil {
-		return
-	}
-
-	if out == os.Stdout.Name() {
-		outFile, err = os.OpenFile(out, os.O_WRONLY|os.O_APPEND, DefaultPerm)
-		return
-	}
-
-	// If we got here, we're actually creating a new file!
-
-	callopt := os.O_CREATE | os.O_RDWR
-	if opt.Force {
-		callopt |= os.O_TRUNC
-	} else {
-		callopt |= os.O_EXCL
-	}
-
-	outFile, err = os.OpenFile(out, callopt, DefaultPerm)
-
-	return
-}
-
 func main() {
 	parser := flags.NewParser(&opt, flags.Default)
 	args, err := parser.Parse()
@@ -156,7 +96,7 @@ func main() {
 		die(err)
 	}
 
-	inFile, outFile, err := openInputOutput(cmd, in, out)
+	inFile, outFile, err := openInputOutput(cmd, opt.Force, in, out)
 	defer inFile.Close()
 	defer outFile.Close()
 
