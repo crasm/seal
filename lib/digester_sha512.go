@@ -77,6 +77,11 @@ func (d *digesterSha512) WrapBuffered(in io.Reader, out io.Writer) (*Shield, err
 		return shd, err
 	}
 
+	_, err = tmp.Seek(0, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	outwr := bufio.NewWriter(out)
 	_, err = outwr.ReadFrom(tmp)
 	if err != nil {
