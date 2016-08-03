@@ -5,7 +5,6 @@ package main
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,46 +12,6 @@ import (
 
 	shield "github.com/crasm/shield/lib"
 )
-
-const FileExtension = `.shd`
-
-// Determine the proper input and output files. If outFile can't be
-// determined (is implicit), then nil is returned for outFile.
-// TODO: This is hard to test. Should it return a filename and not
-// actually open the files?
-func determineInputOutput(cmd Command, inArg, outArg string) (in, out string, err error) {
-	in = os.Stdin.Name()
-	out = os.Stdout.Name()
-
-	explicitIn := inArg != Stdio && inArg != ""
-	explicitOut := outArg != Stdio && outArg != ""
-
-	if explicitIn {
-		in = inArg
-	}
-
-	if explicitOut {
-		out = outArg
-	}
-
-	implicitOut := explicitIn && outArg == ""
-	if implicitOut {
-		switch cmd {
-		case Create:
-			out = in + FileExtension
-		case Extract:
-			inferred := strings.TrimSuffix(in, FileExtension)
-			if inferred == in {
-				err = errors.New("output filename required")
-			}
-			out = inferred
-		default:
-			// If it's none of the above, leave it as Stdio.
-		}
-	}
-
-	return in, out, err
-}
 
 // Figures out input and output files and calls the appropiate shield library
 // functions on them.

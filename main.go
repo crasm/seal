@@ -12,8 +12,6 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-const Stdio = `-`
-
 var opt struct {
 	Create  bool `short:"C" long:"create" description:"Create a shielded file."`
 	Extract bool `short:"X" long:"extract" description:"Extract a contained file."`
@@ -115,14 +113,15 @@ func main() {
 		die(err)
 	}
 
-	inArg := Stdio
-	outArg := opt.Output
+	var inArg, outArg string
 
 	if len(args) == 1 {
-		inArg = args[0] // We were given an explicit input, so use it. Might still be Stdio.
+		inArg = args[0] // We were given an explicit input, so use it. Might still be stdio ("-").
 	} else if len(args) > 1 {
 		die("Too many input arguments. Expected only one.")
 	}
+
+	outArg = opt.Output
 
 	in, out, err := determineInputOutput(cmd, inArg, outArg)
 	if err != nil {
