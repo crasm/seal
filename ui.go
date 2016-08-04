@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const FileExtension = `.shd`
+const FileExtension = `.sl`
 
 var stdin = os.Stdin.Name()
 var stdout = os.Stdout.Name()

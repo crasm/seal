@@ -1,4 +1,4 @@
-SHD%v0{53331cbf3149b47ba0be481c1cfd61d60282ce13652909a17a2562677763d30d}
+SL%v0{53331cbf3149b47ba0be481c1cfd61d60282ce13652909a17a2562677763d30d}
 Copyright (c) 2016, crasm <crasm@vczf.io>
 
 Permission to use, copy, modify, and/or distribute this software for any

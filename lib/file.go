@@ -1,7 +1,7 @@
 // Copyright (c) 2016, crasm <crasm@vczf.io>
 // This code is open source under the ISC license. See LICENSE for details.
 
-package shield
+package seal
 
 import (
 	"errors"
@@ -9,10 +9,10 @@ import (
 	"os"
 )
 
-var ErrFileModified = errors.New("shield: file has been modified without a Sync")
+var ErrFileModified = errors.New("seal: file has been modified without a Sync")
 
 // File represents a subset of the functionality in os.File, to allow
-// transparent access to reading and writing shield files.
+// transparent access to reading and writing seal files.
 type File interface {
 	io.Reader
 	// io.ReaderAt

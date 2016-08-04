@@ -9,10 +9,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	shield "github.com/crasm/shield/lib"
+	seal "github.com/crasm/seal/lib"
 )
 
-// Figures out input and output files and calls the appropiate shield library
+// Figures out input and output files and calls the appropiate seal library
 // functions on them.
 func dispatch(cmd Command, in, out *os.File) error {
 
@@ -22,7 +22,7 @@ func dispatch(cmd Command, in, out *os.File) error {
 		return err
 	}
 
-	digester := shield.NewDigesterSha512(bytes)
+	digester := seal.NewDigesterSha512(bytes)
 
 	switch cmd {
 	case Create:
@@ -36,14 +36,14 @@ func dispatch(cmd Command, in, out *os.File) error {
 		_, err = digester.Unwrap(in, out)
 
 	case Verify:
-		var shd *shield.UnwrappedShield
-		shd, err = digester.Unwrap(in, ioutil.Discard)
+		var sl *seal.UnwrappedSeal
+		sl, err = digester.Unwrap(in, ioutil.Discard)
 		fmt.Fprintf(out, "claim:  %v\nactual: %v\n",
-			hex.EncodeToString(shd.Claim),
-			hex.EncodeToString(shd.Actual))
+			hex.EncodeToString(sl.Claim),
+			hex.EncodeToString(sl.Actual))
 
 	case Dump:
-		err = shield.DumpHeader(in, out)
+		err = seal.DumpHeader(in, out)
 	default:
 		panic("no command specified")
 	}

@@ -1,7 +1,7 @@
 // Copyright (c) 2016, crasm <crasm@vczf.io>
 // This code is open source under the ISC license. See LICENSE for details.
 
-package shield
+package seal
 
 import (
 	"bufio"
@@ -25,13 +25,13 @@ func NewDigesterSha512(trunc int) Digester {
 	return &digesterSha512{hash: sha512.New(), trunc: trunc}
 }
 
-// Creates a shield on the data from in. Writes the shield header and the file
+// Creates a seal on the data from in. Writes the seal header and the file
 // contents to out. In most cases, out should be an *os.File. However, anything
 // that supports seeking to the start is supported.
 //
-// Returns a Shield describing the header of the shield file just created.
+// Returns a Seal describing the header of the seal file just created.
 // trunc is bytes, not bits
-func (d *digesterSha512) Wrap(in io.Reader, out io.WriteSeeker) (*Shield, error) {
+func (d *digesterSha512) Wrap(in io.Reader, out io.WriteSeeker) (*Seal, error) {
 	size, err := headerSize(d.trunc)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (d *digesterSha512) Wrap(in io.Reader, out io.WriteSeeker) (*Shield, error)
 		return nil, err
 	}
 
-	shd := &Shield{}
+	sl := &Seal{}
 
 	calc, err := teesum(in, out)
 	if err != nil {
@@ -53,18 +53,18 @@ func (d *digesterSha512) Wrap(in io.Reader, out io.WriteSeeker) (*Shield, error)
 
 	_, err = out.Seek(0, 0)
 	if err != nil {
-		return shd, err
+		return sl, err
 	}
 
 	header := createHeader(calc)
 	_, err = out.Write([]byte(header))
-	return shd, err
+	return sl, err
 }
 
-// Creates a shield on the data from in, buffering the input to a temporary
+// Creates a seal on the data from in, buffering the input to a temporary
 // file.
-func (d *digesterSha512) WrapBuffered(in io.Reader, out io.Writer) (*Shield, error) {
-	tmp, err := ioutil.TempFile("", "shield")
+func (d *digesterSha512) WrapBuffered(in io.Reader, out io.Writer) (*Seal, error) {
+	tmp, err := ioutil.TempFile("", "seal")
 	defer tmp.Close()
 	defer os.Remove(tmp.Name())
 	if err != nil {
@@ -72,9 +72,9 @@ func (d *digesterSha512) WrapBuffered(in io.Reader, out io.Writer) (*Shield, err
 	}
 
 	// Do the actual wrapping, but output to a temporary file.
-	shd, err := d.Wrap(in, tmp)
+	sl, err := d.Wrap(in, tmp)
 	if err != nil {
-		return shd, err
+		return sl, err
 	}
 
 	_, err = tmp.Seek(0, 0)
@@ -85,35 +85,35 @@ func (d *digesterSha512) WrapBuffered(in io.Reader, out io.Writer) (*Shield, err
 	outwr := bufio.NewWriter(out)
 	_, err = outwr.ReadFrom(tmp)
 	if err != nil {
-		return shd, err
+		return sl, err
 	}
 
-	return shd, outwr.Flush()
+	return sl, outwr.Flush()
 }
 
 // Writes the file contents after the header to out. If the claim does not
 // validate (match the actual hash), a non-nil error is returned.
-func (d *digesterSha512) Unwrap(in io.Reader, out io.Writer) (*UnwrappedShield, error) {
+func (d *digesterSha512) Unwrap(in io.Reader, out io.Writer) (*UnwrappedSeal, error) {
 	s, err := parseHeader(in)
 	if err != nil {
 		return nil, err
 	}
 
-	shd := &UnwrappedShield{Shield: *s}
+	sl := &UnwrappedSeal{Seal: *s}
 
 	actual, err := teesum(in, out)
 	if err != nil {
-		return shd, err
+		return sl, err
 	}
 
-	shd.Actual = actual[:len(shd.Claim)]
+	sl.Actual = actual[:len(sl.Claim)]
 
-	if !bytes.Equal(shd.Claim, shd.Actual) {
+	if !bytes.Equal(sl.Claim, sl.Actual) {
 		// TODO: Make this a const error.
-		err = fmt.Errorf("shield: claim did not match actual hash")
+		err = fmt.Errorf("seal: claim did not match actual hash")
 	}
 
-	return shd, err
+	return sl, err
 }
 
 // Take the hash of the data from in, write it to out, and return the hash.

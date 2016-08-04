@@ -12,11 +12,11 @@ import (
 )
 
 var opt struct {
-	Create  bool `short:"C" long:"create" description:"Create a shielded file."`
+	Create  bool `short:"C" long:"create" description:"Create a sealed file."`
 	Extract bool `short:"X" long:"extract" description:"Extract a contained file."`
 	Verify  bool `short:"V" long:"verify" description:"Verify and check for corruption."`
-	Dump    bool `short:"D" long:"dump" description:"Dump raw shield header."`
-	// Info    bool `short:"I" long:"info" description:"View shield header information."`
+	Dump    bool `short:"D" long:"dump" description:"Dump raw seal header."`
+	// Info    bool `short:"I" long:"info" description:"View seal header information."`
 
 	Output string `short:"o" long:"output" description:"Write output to a file."`
 	Force  bool   `short:"f" long:"force" description:"Overwrite files."`

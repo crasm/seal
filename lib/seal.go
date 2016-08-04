@@ -1,23 +1,23 @@
 // Copyright (c) 2016, crasm <crasm@vczf.io>
 // This code is open source under the ISC license. See LICENSE for details.
 
-package shield
+package seal
 
-const Magic = `SHD%`
+const Magic = `SL%v`
 const Version = 0 // Current major version number for the library.
 
-const IdentLen = len(`SHD%v0`)
+const IdentLen = len(`SL%v0`)
 
-// Shield is the information read from a shield header.
-type Shield struct {
+// Seal is the information read from a seal header.
+type Seal struct {
 	Magic   string
 	Version int
 	Claim   []byte
 }
 
-// Shield contains shield file data.
+// UnwrappedSeal contains seal file data.
 // TODO: Clarify.
-type UnwrappedShield struct {
-	Shield
+type UnwrappedSeal struct {
+	Seal
 	Actual []byte
 }

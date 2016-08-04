@@ -1,26 +1,23 @@
-shield
-======
+seal
+====
 
 **Warning: This project is under heavy development. Breaking changes will most
 likely be introduced in the spec and the tool itself until 1.0.**
 
-`shield` is a container format that lets you check for file corruption without
+`seal` is a container format that lets you check for file corruption without
 dealing with separate checksum files.
 
-Distilled, shield is just a file with a prepended sha512 hash, optionally
+Distilled, seal is just a file with a prepended sha512 hash, optionally
 truncated.
 
 The header has the following format:
 
-    SHD%v0{cf83e135}
+    SL%v0{cf83e135}
 
-Above is a fully valid shielded file (ending in a newline), where the
+Above is a fully valid sealed file (ending in a newline), where the
 contents are completely empty.
 
 Check the examples folder for more.
-
-( I was disturbingly able to trash many bits within squirrel.jpg before the
-corruption was visible when I opened the file. Hence why this project must exist. )
 
 Potential use cases
 -------------------
@@ -46,42 +43,43 @@ solutions I found were:
 3. ZFS (not portable)
 
 My criteria was that it needed to be portable and simple to manage, so I
-designed my own using linux [shell
-commands](https://github.com/crasm/shield.sh). This repository is the evolution
-of that proof-of-concept.
+designed my own using linux [shell commands][shield.sh]. This repository is the
+evolution of that proof-of-concept.
+
+[shield.sh]: https://github.com/crasm/shield.sh
 
 I plan on using this to guard my lossless music collection, but I need to
-add shield support to mpv (`shield-c`) and beets (`shield-python`) before that can
+add seal support to mpv (`seal-c`) and beets (`seal-py`) before that can
 happen.
 
-(It's possible to just pipe the output of a music or video file from shield to
+(It's possible to just pipe the output of a music or video file from seal to
 mpv -- or the player of your choice -- but seeking doesn't work and it's
 generally a pain.)
 
 Installation
 ------------
 
-    ; go get -v github.com/crasm/shield
-    ; go install -v github.com/crasm/shield
+    ; go get -v github.com/crasm/seal
+    ; go install -v github.com/crasm/seal
 
 Usage
 -----
 
-Once installed, run shield with no arguments.
+Once installed, run seal with no arguments.
 
-    ; shield
+    ; seal
 
 Examples
 --------
 
-    # Extracts to squirrel.jpg.
-    ; shield -X squirrel.jpg.shd 
+    # Extracts to LICENSE
+    ; seal -X LICENSE.sl
 
     # Prints to stdout. (Be careful with binary.)
-    ; shield -C < LICENSE
+    ; seal -C < LICENSE
 
-    # Shields the text and then extracts it. (Does a lot of nothing.)
-    ; echo 'shield pipe!' | shield -C | shield -X
+    # Seals the text and then extracts it. (Does a lot of... nothing.)
+    ; echo 'seal pipe!' | seal -C | seal -X
 
 Mission
 -------
@@ -95,24 +93,24 @@ Stretch goals
 -------------
 
 - [ ] Signify support as an alternative to sha512.
-- [ ] Backup client that uses shield to verify integrity while copying files.
+- [ ] Backup client that uses seal to verify integrity while copying files.
 - [ ] Browser plugins and apps for automatic verification and extraction of downloads.
-- [ ] HTTP middleware for go. (Shield protected HTML? Why not.)
+- [ ] HTTP middleware for go. (Sealed HTML? Why not.)
 
-Manual shield header generation
--------------------------------
+Manual seal generation
+----------------------
 
-To generate a shield file by hand:
+To generate a seal file by hand:
 
     ; sha512sum LICENSE
     53331cbf3149b47ba0be481c1cfd61d60282ce13652909a17a25626...  LICENSE
-    ; echo 'SHD%v0{<paste the hash>}' > LICENSE.shd
-    ; cat LICENSE >> LICENSE.shd
+    ; echo 'SL%v0{<paste the hash>}' > LICENSE.sl
+    ; cat LICENSE >> LICENSE.sl
 
-To check a shielded file by hand:
+To check a sealed file by hand:
 
-    ; head -n 1 LICENSE.shd
-    ; tail -n +2 LICENSE.shd > LICENSE
+    ; head -n 1 LICENSE.sl
+    ; tail -n +2 LICENSE.sl > LICENSE
     ; sha512sum LICENSE
       <compare the hashes starting from the left>
 

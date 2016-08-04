@@ -83,13 +83,13 @@ func TestDetermineInputOutputInference(t *testing.T) {
 			givenIn:     "fileIn",
 			givenOut:    "",
 			expectedIn:  "fileIn",
-			expectedOut: "fileIn.shd",
+			expectedOut: "fileIn.sl",
 		},
 		{
 			command:     Extract,
-			givenIn:     "fileIn.shd",
+			givenIn:     "fileIn.sl",
 			givenOut:    "",
-			expectedIn:  "fileIn.shd",
+			expectedIn:  "fileIn.sl",
 			expectedOut: "fileIn",
 		},
 	}
