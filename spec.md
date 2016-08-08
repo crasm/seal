@@ -12,9 +12,9 @@ The goal of seal is to reduce the barrier to checking for file corruption and
 file authenticity, and therefore make storing and transferring digital files
 provably reliable.
 
-seal also aims to match or exceed the integrity and security guarantees offered by
-PGP-signed checksum files, while offering acceptable performance and being
-simple to use and understand.
+seal also aims to match the integrity and security guarantees offered by signify
+signed files, while having acceptable performance and being simple to use and
+understand.
 
 Header Identification
 ---------------------
@@ -54,10 +54,20 @@ The following short form may be used:
 
     SL%v0{<claim>}
 
+Example, truncated to 128 bits:
+
+    SL%v0{53331cbf3149b47ba0be481c1cfd61d6}
+
 ### signify
 
 The `signify` variant targets compatibility with OpenBSD's signify tool for
 signing and verification. The claim is the base64-encoded signature generated
 by signify on a given file.
+
+    SL%v0{signify:<signature>}
+
+Example:
+
+    SL%v0{signify:RWRMdbgIymBjpBudT1rr/hQivikPSRRVgTTj+0u+t5Lg1zGbz28HaseMefb9XbycbXGT0Lfm0KOc5vZbi8cydUtIpP4Txqe5GQs=}
 
 vim: tw=80 et sw=4 sts=4
