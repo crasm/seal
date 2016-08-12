@@ -32,13 +32,28 @@ Potential use cases
 What I'm using it for
 ---------------------
 
-Nothing yet.
+Right now, I'm sealing tarballs.
 
-However, the reason why I started this was because I became paranoid of disk rot
+For instance, each set of the [nexus factory images][] come in a ~1GB tarball.
+Rather than storing the hash separately, I seal the files. In the event I need
+to extract them later (I bricked my phone...), it's easy:
+
+    ; seal -X < bullhead-mtc20f-factory-b85029e5.tgz.sl | tar vxzf -
+
+[nexus factory images]: https://developers.google.com/android/nexus/images
+
+_tar actually has CRC checksums, so it'll most likely catch any accidental
+corruption by itself. However, the performance overhead of seal is less than 5%
+(informally benchmarked) for large files, so it doesn't hurt much._
+
+Why
+---
+
+The reason why I started seal was because I became paranoid of disk rot
 when one of my music files became corrupted during a copy, and the best
 solutions I found were:
 
-1. Checksum files (messy, easy to become outdated) 
+1. Checksum files (messy, easy to become outdated)
 2. parchive (messy, easy to lose)
 3. ZFS (not portable)
 
@@ -47,14 +62,6 @@ designed my own using linux [shell commands][shield.sh]. This repository is the
 evolution of that proof-of-concept.
 
 [shield.sh]: https://github.com/crasm/shield.sh
-
-I plan on using this to guard my lossless music collection, but I need to
-add seal support to mpv (`seal-c`) and beets (`seal-py`) before that can
-happen.
-
-(It's possible to just pipe the output of a music or video file from seal to
-mpv -- or the player of your choice -- but seeking doesn't work and it's
-generally a pain.)
 
 Installation
 ------------
