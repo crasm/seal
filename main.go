@@ -64,7 +64,10 @@ func main() {
 	parser := flags.NewParser(&opt, flags.Default)
 	args, err := parser.Parse()
 	if err != nil {
-		help(parser)
+		flagsErr, ok := err.(*flags.Error)
+		if ok && flagsErr.Type != flags.ErrHelp {
+			help(parser)
+		}
 		die()
 	}
 
