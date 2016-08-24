@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha512"
-	"fmt"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -19,8 +18,7 @@ type digesterSha512 struct {
 	trunc int
 }
 
-// TODO NEXT: This solves the problem of "where do I put trunclen?" But
-// now, need to properly implement the rest of it.
+// Creates a new digester with a sha512 hash truncated to trunc bytes.
 func NewDigesterSha512(trunc int) Digester {
 	return &digesterSha512{hash: sha512.New(), trunc: trunc}
 }
@@ -109,8 +107,7 @@ func (d *digesterSha512) Unwrap(in io.Reader, out io.Writer) (*UnwrappedSeal, er
 	sl.Actual = actual[:len(sl.Claim)]
 
 	if !bytes.Equal(sl.Claim, sl.Actual) {
-		// TODO: Make this a const error.
-		err = fmt.Errorf("seal: claim did not match actual hash")
+		err = ErrSealBroken
 	}
 
 	return sl, err
