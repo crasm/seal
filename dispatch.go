@@ -15,32 +15,25 @@ import (
 // Figures out input and output files and calls the appropiate seal library
 // functions on them.
 func dispatch(cmd Command, in, out *os.File) error {
-
-	// TODO: Move this validation code somewhere else. (Library?)
-	bytes, err := bitsToBytes(opt.Size)
-	if err != nil {
-		return err
-	}
-
-	digester := seal.NewDigesterSha512(bytes)
+	var err error
 
 	switch cmd {
 	case Create:
 		if out.Name() == os.Stdout.Name() {
-			_, err = digester.WrapBuffered(in, out)
+			_, err = seal.WrapBuffered(in, out, opt.Size)
 		} else {
-			_, err = digester.Wrap(in, out)
+			_, err = seal.Wrap(in, out, opt.Size)
 		}
 
 	case Extract:
-		_, err = digester.Unwrap(in, out)
+		_, err = seal.Unwrap(in, out)
 
 	case Verify:
 		var sl *seal.UnwrappedSeal
-		sl, err = digester.Unwrap(in, ioutil.Discard)
+		sl, err = seal.Unwrap(in, ioutil.Discard)
 		fmt.Fprintf(out, "claim:  %v\nactual: %v\n",
-			hex.EncodeToString(sl.Claim),
-			hex.EncodeToString(sl.Actual))
+			hex.EncodeToString(sl.ClaimedSignature),
+			hex.EncodeToString(sl.CalculatedSignature))
 
 	case Dump:
 		err = seal.DumpHeader(in, out)
