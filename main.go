@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/jessevdk/go-flags"
@@ -18,8 +19,9 @@ var opt struct {
 	Dump    bool `short:"D" long:"dump" description:"Dump raw seal header."`
 	// Info    bool `short:"I" long:"info" description:"View seal header information."`
 
-	Output string `short:"o" long:"output" description:"Write output to a file."`
-	Force  bool   `short:"f" long:"force" description:"Overwrite files."`
+	Output  string `short:"o" long:"output" description:"Write output to a file."`
+	Force   bool   `short:"f" long:"force" description:"Overwrite files."`
+	Verbose bool   `short:"v" long:"verbose" description:"Enable verbose debug output"`
 	//Timid      bool `short:"t" long:"timid" description:"Do not allow invalid files to be extracted."`
 	//Lax   bool `short:"l" long:"lax" description:"Allow partial and unverified extraction"`
 	//Quiet bool `short:"q" long:"quiet" description:"Silence all non-data output to stdout or stderr."`
@@ -98,9 +100,17 @@ func main() {
 		die(err)
 	}
 
+	if opt.Verbose {
+		log.Printf("Using %q for input, %q for output\n", in, out)
+	}
+
 	inFile, outFile, err := openInputOutput(cmd, opt.Force, in, out)
 	defer inFile.Close()
 	defer outFile.Close()
+
+	if err != nil {
+		die(err)
+	}
 
 	err = dispatch(cmd, inFile, outFile)
 	if err != nil {
