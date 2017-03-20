@@ -1,8 +1,8 @@
 seal
 ====
 
-**Warning: This project is under heavy development. Breaking changes will most
-likely be introduced in the spec and the tool itself until 1.0.**
+**Warning: This project is still under development. Breaking changes may
+potentially be introduced until 1.0.**
 
 `seal` is a container format that lets you check for file corruption without
 dealing with separate checksum files.
@@ -38,7 +38,8 @@ For instance, each set of the [nexus factory images][] come in a ~1GB tarball.
 Rather than storing the hash separately, I seal the files. In the event I need
 to extract them later (I bricked my phone...), it's easy:
 
-    ; seal -X < bullhead-mtc20f-factory-b85029e5.tgz.sl | tar vxzf -
+    ; tar vczf - * | seal -Co bullhead.tgz.sl  # Archive and seal
+    ; seal -X < bullhead.tgz.sl | tar vxzf -   # Verify and extract
 
 [nexus factory images]: https://developers.google.com/android/nexus/images
 
