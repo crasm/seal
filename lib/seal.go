@@ -50,26 +50,6 @@ func (sl *Seal) String() string {
 		hex.EncodeToString(sl.ClaimedSignature))
 }
 
-// Generate a Seal for the io.Reader with the default number of bits.
-func Generate(in io.Reader) (*Seal, error) {
-	return GenerateBits(in, DefaultSealBits)
-}
-
-func GenerateBits(in io.Reader, bits int) (*Seal, error) {
-	sigLen := bitsToBytes(bits)
-	if sigLen == -1 {
-		return nil, ErrBadSignatureLength
-	}
-
-	calc, err := sum(in)
-
-	return &Seal{
-		Magic:            Magic,
-		Version:          Version,
-		ClaimedSignature: calc[:sigLen],
-	}, err
-}
-
 // Wrap the contents of `in` with a Seal header, and write the full Seal
 // file to `out`. Uses the default number of bits.
 func Wrap(in io.Reader, out io.WriteSeeker) (*Seal, error) {
@@ -188,12 +168,6 @@ func bitsToBytes(bits int) int {
 		return -1
 	}
 	return bytes
-}
-
-func sum(in io.Reader) ([]byte, error) {
-	digester := sha512.New()
-	_, err := bufio.NewReader(in).WriteTo(digester)
-	return digester.Sum(nil), err
 }
 
 // Take the hash of the data from in, write it to out, and return the hash.
