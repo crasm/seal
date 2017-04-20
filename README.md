@@ -38,8 +38,8 @@ For instance, each set of the [nexus factory images][] come in a ~1GB tarball.
 Rather than storing the hash separately, I seal the files. In the event I need
 to extract them later (I bricked my phone...), it's easy:
 
-    ; tar vczf - * | seal -Co bullhead.tgz.sl  # Archive and seal
-    ; seal -X < bullhead.tgz.sl | tar vxzf -   # Verify and extract
+    ; tar vczf - * | seal -Wo bullhead.tgz.sl  # Archive, wrap with a seal
+    ; seal -U < bullhead.tgz.sl | tar vxzf -   # Verify, seal and unwrap
 
 [nexus factory images]: https://developers.google.com/android/nexus/images
 
@@ -81,13 +81,13 @@ Examples
 --------
 
     # Extracts to LICENSE
-    ; seal -X LICENSE.sl
+    ; seal -U LICENSE.sl
 
     # Prints to stdout. (Be careful with binary.)
-    ; seal -C < LICENSE
+    ; seal -W < LICENSE
 
     # Seals the text and then extracts it. (Does a lot of... nothing.)
-    ; echo 'seal pipe!' | seal -C | seal -X
+    ; echo 'seal pipe!' | seal -W | seal -U
 
 Mission
 -------
