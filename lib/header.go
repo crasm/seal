@@ -13,11 +13,6 @@ func headerLen(bytes int) int {
 	return IdentLen + len("{}\n") + bytes*2
 }
 
-func createHeader(claim []byte) []byte {
-	hexclaim := hex.EncodeToString(claim)
-	return []byte(fmt.Sprintf("%s%d{%s}\n", Magic, Version, hexclaim))
-}
-
 // Parses the header of a seal file. Does not read beyond the
 // header.
 func parseHeader(in *bufio.Reader) (*Seal, error) {

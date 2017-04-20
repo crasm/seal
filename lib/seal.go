@@ -7,7 +7,9 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha512"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -17,6 +19,8 @@ const Magic = `SL%v`
 const Version = 0
 
 const IdentLen = len(`SL%v0`)
+
+const DefaultSealBits = 512
 
 var ErrSealBroken = errors.New("seal: claim did not validate against content")
 var ErrBadSignatureLength = errors.New("seal: signature length is invalid")
@@ -37,7 +41,42 @@ type UnwrappedSeal struct {
 	CalculatedSignature []byte
 }
 
-func Wrap(in io.Reader, out io.WriteSeeker, bits int) (*Seal, error) {
+func (sl *Seal) Bytes() []byte {
+	return []byte(sl.String())
+}
+
+func (sl *Seal) String() string {
+	return fmt.Sprintf("%s%d{%s}\n", sl.Magic, sl.Version,
+		hex.EncodeToString(sl.ClaimedSignature))
+}
+
+// Generate a Seal for the io.Reader with the default number of bits.
+func Generate(in io.Reader) (*Seal, error) {
+	return GenerateBits(in, DefaultSealBits)
+}
+
+func GenerateBits(in io.Reader, bits int) (*Seal, error) {
+	sigLen := bitsToBytes(bits)
+	if sigLen == -1 {
+		return nil, ErrBadSignatureLength
+	}
+
+	calc, err := sum(in)
+
+	return &Seal{
+		Magic:            Magic,
+		Version:          Version,
+		ClaimedSignature: calc[:sigLen],
+	}, err
+}
+
+// Wrap the contents of `in` with a Seal header, and write the full Seal
+// file to `out`. Uses the default number of bits.
+func Wrap(in io.Reader, out io.WriteSeeker) (*Seal, error) {
+	return WrapBits(in, out, DefaultSealBits)
+}
+
+func WrapBits(in io.Reader, out io.WriteSeeker, bits int) (*Seal, error) {
 	var err error
 
 	sigLen := bitsToBytes(bits)
@@ -57,23 +96,28 @@ func Wrap(in io.Reader, out io.WriteSeeker, bits int) (*Seal, error) {
 		return nil, err
 	}
 
-	header := createHeader(calc[:sigLen])
+	sl := &Seal{
+		Magic:            Magic,
+		Version:          Version,
+		ClaimedSignature: calc[:sigLen],
+	}
 
 	_, err = out.Seek(0, 0)
 	if err != nil {
 		return nil, err
 	}
-	_, err = out.Write(header)
+	_, err = out.Write(sl.Bytes())
 
-	sl := &Seal{
-		Magic:            Magic,
-		Version:          Version,
-		ClaimedSignature: calc,
-	}
 	return sl, err
 }
 
-func WrapBuffered(in io.Reader, out io.Writer, bits int) (*Seal, error) {
+// Same as Wrap, but uses a temporary file to buffer the output because
+// `out` is not seekable.
+func WrapBuffered(in io.Reader, out io.Writer) (*Seal, error) {
+	return WrapBufferedBits(in, out, DefaultSealBits)
+}
+
+func WrapBufferedBits(in io.Reader, out io.Writer, bits int) (*Seal, error) {
 	tmp, err := ioutil.TempFile("", "seal")
 	defer tmp.Close()
 	defer os.Remove(tmp.Name())
@@ -82,7 +126,7 @@ func WrapBuffered(in io.Reader, out io.Writer, bits int) (*Seal, error) {
 	}
 
 	// Do the actual wrapping, but output to a temporary file.
-	sl, err := Wrap(in, tmp, bits)
+	sl, err := WrapBits(in, tmp, bits)
 	if err != nil {
 		return sl, err
 	}
@@ -144,6 +188,12 @@ func bitsToBytes(bits int) int {
 		return -1
 	}
 	return bytes
+}
+
+func sum(in io.Reader) ([]byte, error) {
+	digester := sha512.New()
+	_, err := bufio.NewReader(in).WriteTo(digester)
+	return digester.Sum(nil), err
 }
 
 // Take the hash of the data from in, write it to out, and return the hash.

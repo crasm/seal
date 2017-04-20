@@ -20,9 +20,9 @@ func dispatch(cmd Command, in, out *os.File) error {
 	switch cmd {
 	case Create:
 		if out.Name() == os.Stdout.Name() {
-			_, err = seal.WrapBuffered(in, out, opt.Size)
+			_, err = seal.WrapBufferedBits(in, out, opt.Size)
 		} else {
-			_, err = seal.Wrap(in, out, opt.Size)
+			_, err = seal.WrapBits(in, out, opt.Size)
 		}
 
 	case Extract:
