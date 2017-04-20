@@ -13,15 +13,17 @@ import (
 )
 
 var opt struct {
-	Create  bool `short:"C" long:"create" description:"Create a sealed file."`
-	Extract bool `short:"X" long:"extract" description:"Extract a contained file."`
-	Verify  bool `short:"V" long:"verify" description:"Verify and check for corruption."`
-	Dump    bool `short:"D" long:"dump" description:"Dump raw seal header."`
+	Wrap   bool `short:"W" long:"wrap" description:"Wrap a file in a seal."`
+	Unwrap bool `short:"U" long:"unwrap" description:"Unwrap (extract) a sealed file."`
+	Check  bool `short:"C" long:"check" description:"Check a seal for corrupted file contents."`
+	Dump   bool `short:"D" long:"dump" description:"Dump raw seal header."`
 	// Info    bool `short:"I" long:"info" description:"View seal header information."`
 
 	Output  string `short:"o" long:"output" description:"Write output to a file."`
-	Force   bool   `short:"f" long:"force" description:"Overwrite files."`
 	Verbose bool   `short:"v" long:"verbose" description:"Enable verbose debug output"`
+
+	Force bool `long:"force" description:"Overwrite files. Required when inferring filenames."`
+
 	//Timid      bool `short:"t" long:"timid" description:"Do not allow invalid files to be extracted."`
 	//Lax   bool `short:"l" long:"lax" description:"Allow partial and unverified extraction"`
 	//Quiet bool `short:"q" long:"quiet" description:"Silence all non-data output to stdout or stderr."`
@@ -87,6 +89,12 @@ func main() {
 
 	inArg := ""
 	outArg := opt.Output
+
+	// If we explicitly give an output file, don't stop us from
+	// overwriting it.
+	if outArg != "" {
+		opt.Force = true
+	}
 
 	if len(args) == 1 {
 		// We were given an explicit input, so use it. Might still be stdio ("-").

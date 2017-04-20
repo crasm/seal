@@ -42,9 +42,9 @@ func determineInputOutput(cmd Command, inArg, outArg string) (in, out string, er
 
 	if infer {
 		switch cmd {
-		case Create:
+		case Wrap:
 			out = in + FileExtension
-		case Extract:
+		case Unwrap:
 			inferred := strings.TrimSuffix(in, FileExtension)
 			if inferred == in {
 				err = errors.New("output filename required")

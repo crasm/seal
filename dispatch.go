@@ -18,17 +18,17 @@ func dispatch(cmd Command, in, out *os.File) error {
 	var err error
 
 	switch cmd {
-	case Create:
+	case Wrap:
 		if out.Name() == os.Stdout.Name() {
 			_, err = seal.WrapBufferedBits(in, out, opt.Size)
 		} else {
 			_, err = seal.WrapBits(in, out, opt.Size)
 		}
 
-	case Extract:
+	case Unwrap:
 		_, err = seal.Unwrap(in, out)
 
-	case Verify:
+	case Check:
 		var sl *seal.UnwrappedSeal
 		sl, err = seal.Unwrap(in, ioutil.Discard)
 		fmt.Fprintf(out, "claim:  %v\nactual: %v\n",

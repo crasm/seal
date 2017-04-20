@@ -8,26 +8,26 @@ import "errors"
 type Command int
 
 const (
-	Create Command = iota
-	Extract
-	Verify
+	Wrap Command = iota
+	Unwrap
+	Check
 	Dump
 )
 
 func getCommand() (Command, error) {
 	var cmd Command
 
-	if !isMutuallyExclusive(opt.Create, opt.Extract, opt.Verify, opt.Dump) {
+	if !isMutuallyExclusive(opt.Wrap, opt.Unwrap, opt.Check, opt.Dump) {
 		return cmd, errors.New("too many primary commands")
 	}
 
 	switch {
-	case opt.Create:
-		cmd = Create
-	case opt.Extract:
-		cmd = Extract
-	case opt.Verify:
-		cmd = Verify
+	case opt.Wrap:
+		cmd = Wrap
+	case opt.Unwrap:
+		cmd = Unwrap
+	case opt.Check:
+		cmd = Check
 	case opt.Dump:
 		cmd = Dump
 	default:
